@@ -16,12 +16,12 @@ namespace NewWorldMinimap.Core
     /// <seealso cref="IDisposable" />
     public class PositionDetector : IDisposable
     {
-        private const int XOffset = 277;
+        private const int XOffset = 257;
         private const int YOffset = 18;
-        private const int TextWidth = 277;
-        private const int TextHeight = 18;
+        private const int TextWidth = XOffset;
+        private const int TextHeight = YOffset;
         private const int MaxCounter = 5;
-        private static Vector4 textColor = new Vector4(220, 220, 160, 1);
+        private static Vector4 textColor = (Vector4)Color.FromRgb(220, 220, 160);
 
         private static readonly Regex PosRegex = new Regex(@"(\d+ \d+) (\d+ \d+)", RegexOptions.Compiled);
 
@@ -60,15 +60,17 @@ namespace NewWorldMinimap.Core
 
             bmp.Mutate(x => x
                 .Crop(new Rectangle(bmp.Width - XOffset, YOffset, TextWidth, TextHeight))
-                .Resize(TextWidth * 4, TextHeight * 4));
-            debugImage = debugEnabled ? bmp.Clone() : null!;
-            bmp.Mutate(x => x
-                .HistogramEqualization()
-                .Crop(new Rectangle(0, 2 * 4, TextWidth * 4, 16 * 4))
-                .WhiteFilter(0.9f)
-                .Dilate(2)
-                .Pad(TextWidth * 8, TextHeight * 16, Color.White)
-                );
+                .Resize(TextWidth * 4, TextHeight * 4)
+                .ColorFilter(textColor)
+            );
+            debugImage = debugEnabled ? bmp.Clone() : null;
+            //bmp.Mutate(x => x
+            //    .HistogramEqualization()
+            //    
+            //    .WhiteFilter(0.9f)
+            //    .Dilate(2)
+            //    .Pad(TextWidth * 8, TextHeight * 16, Color.White)
+            //    );
 
             if (TryGetPositionInternal(bmp, out position))
             {
@@ -111,59 +113,62 @@ namespace NewWorldMinimap.Core
 
         private bool TryGetPositionInternal(Image<Rgba32> bmp, out Vector2 position)
         {
+            position = default;
+
             bmp.Metadata.HorizontalResolution = 300;
             bmp.Metadata.VerticalResolution = 300;
 
             string text = tesseract.Read(bmp).Trim();
             Console.WriteLine();
             Console.WriteLine("Read: " + text);
-            text = Regex.Replace(text, @"[^0-9]+", " ");
-            text = Regex.Replace(text, @"\s+", " ").Trim();
-            Match m = PosRegex.Match(text);
-
-            if (m.Success)
+            if (true)
             {
-                float x = float.Parse(m.Groups[1].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
-                float y = float.Parse(m.Groups[2].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
+                text = Regex.Replace(text, @"[^0-9]+", " ");
+                text = Regex.Replace(text, @"\s+", " ").Trim();
+                Match m = PosRegex.Match(text);
 
-                x %= 100000;
-
-                while (x > 14260)
+                if (m.Success)
                 {
-                    x -= 10000;
-                }
+                    float x = float.Parse(m.Groups[1].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
+                    float y = float.Parse(m.Groups[2].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
 
-                y %= 10000;
+                    x %= 100000;
 
-                if (counter >= MaxCounter)
-                {
-                    counter = 0;
-                }
-                else
-                {
-                    if (Math.Abs(lastX - x) > 20 && counter < MaxCounter)
+                    while (x > 14260)
                     {
-                        x = lastX;
-                        counter++;
+                        x -= 10000;
                     }
 
-                    if (Math.Abs(lastY - y) > 20 && counter < MaxCounter)
-                    {
-                        y = lastY;
-                        counter++;
-                    }
-                }
+                    y %= 10000;
 
-                if (x >= 4468 && x <= 14260 && y >= 84 && y <= 9999)
-                {
-                    lastX = x;
-                    lastY = y;
-                    position = new Vector2(x, y);
-                    return true;
+                    if (counter >= MaxCounter)
+                    {
+                        counter = 0;
+                    }
+                    else
+                    {
+                        if (Math.Abs(lastX - x) > 20 && counter < MaxCounter)
+                        {
+                            x = lastX;
+                            counter++;
+                        }
+
+                        if (Math.Abs(lastY - y) > 20 && counter < MaxCounter)
+                        {
+                            y = lastY;
+                            counter++;
+                        }
+                    }
+
+                    if (x >= 4468 && x <= 14260 && y >= 84 && y <= 9999)
+                    {
+                        lastX = x;
+                        lastY = y;
+                        position = new Vector2(x, y);
+                        return true;
+                    }
                 }
             }
-
-            position = default;
             return false;
         }
     }

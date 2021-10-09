@@ -7,7 +7,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Color = SixLabors.ImageSharp.Color;
 
 namespace NewWorldMinimap.Core.Util
 {
@@ -133,12 +132,24 @@ namespace NewWorldMinimap.Core.Util
                     }
                 });
 
-        public static IImageProcessingContext ColorFilter(this IImageProcessingContext context, Vector4 filterColor)
+        /// <summary>
+        /// Filters out colors not close to filterColor and replaces with black
+        /// </summary>
+        /// <param name="context">Image context</param>
+        /// <param name="filterColor">RGBA of color to check against</param>
+        /// <param name="colorDistanceAllowed">Distance from given color allowed</param>
+        /// <returns></returns>
+
+        public static IImageProcessingContext ColorFilter(this IImageProcessingContext context, Vector4 filterColor, float colorDistanceAllowed = 0.415f)
+        // colorDistanceAllowed found by trial and error
+
         => context.ProcessPixelRowsAsVector4(r =>
         {
+            float colorDistance;
             for (int x = 0; x < r.Length; x++)
             {
-                if ((r[x] - filterColor).Length() > 10)
+                colorDistance = (r[x] - filterColor).Length();
+                if (colorDistance > colorDistanceAllowed)
                 {
                     r[x] = Black;
                 }

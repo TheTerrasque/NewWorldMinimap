@@ -7,6 +7,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using Color = SixLabors.ImageSharp.Color;
 
 namespace NewWorldMinimap.Core.Util
 {
@@ -131,6 +132,19 @@ namespace NewWorldMinimap.Core.Util
                         r[x] = c.X == 1 && c.Y == 1 && c.Z == 1 ? White : Black;
                     }
                 });
+
+        public static IImageProcessingContext ColorFilter(this IImageProcessingContext context, Vector4 filterColor)
+        => context.ProcessPixelRowsAsVector4(r =>
+        {
+            for (int x = 0; x < r.Length; x++)
+            {
+                if ((r[x] - filterColor).Length() > 10)
+                {
+                    r[x] = Black;
+                }
+            }
+        });
+        
 
         /// <summary>
         /// Detects white pixels.

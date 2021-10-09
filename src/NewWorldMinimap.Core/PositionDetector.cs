@@ -21,6 +21,7 @@ namespace NewWorldMinimap.Core
         private const int TextWidth = 277;
         private const int TextHeight = 18;
         private const int MaxCounter = 5;
+        private static Vector4 textColor = new Vector4(220, 220, 160, 1);
 
         private static readonly Regex PosRegex = new Regex(@"(\d+ \d+) (\d+ \d+)", RegexOptions.Compiled);
 
@@ -66,7 +67,8 @@ namespace NewWorldMinimap.Core
                 .Crop(new Rectangle(0, 2 * 4, TextWidth * 4, 16 * 4))
                 .WhiteFilter(0.9f)
                 .Dilate(2)
-                .Pad(TextWidth * 8, TextHeight * 16, Color.White));
+                .Pad(TextWidth * 8, TextHeight * 16, Color.White)
+                );
 
             if (TryGetPositionInternal(bmp, out position))
             {

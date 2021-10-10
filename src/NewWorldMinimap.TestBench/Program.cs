@@ -6,17 +6,33 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using NewWorldMinimap.Core;
+using NewWorldMinimap.Core.PositionDetector;
+using NewWorldMinimap.Core.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NewWorldMinimap.TestBench
 {
+    public class ImageFeeder : IImageSource
+    {
+        public ImageFeeder(Image<Rgba32> image)
+        {
+            Image = image;
+        }
+
+        public Image<Rgba32> Image { get; }
+
+        public Image<Rgba32> GetImage()
+        {
+            return Image;
+        }
+    }
     /// <summary>
     /// Entry point of the program.
     /// </summary>
     public static class Program
     {
-        private static PositionDetector pd = new PositionDetector();
+        //private static ImageParserPositionDetector pd = new PositionDetector();
 
         /// <summary>
         /// Defines the entry point of the application.
@@ -34,6 +50,7 @@ namespace NewWorldMinimap.TestBench
             Dictionary<string, List<Result>> results = RunAll(searchPath).GroupBy(x => x.Category).ToDictionary(x => x.Key, x => x.ToList());
 
             int totalFailures = 0;
+            int totalFalseHits = 0;
             int totalRuns = 0;
             ulong totalTimeFail = 0;
             ulong totalTimeSuccess = 0;
@@ -44,6 +61,7 @@ namespace NewWorldMinimap.TestBench
             {
                 Console.WriteLine($"=== Category: {group.Key}");
                 int failures = 0;
+                int falseHits = 0;
 
                 foreach (Result result in group.Value)
                 {
@@ -55,6 +73,11 @@ namespace NewWorldMinimap.TestBench
                         failures++;
                         totalTimeFail += result.Time;
                         Console.WriteLine($"[Fail] {result}");
+                        if (result.FalseSuccess)
+                        {
+                            totalFalseHits++;
+                            falseHits++;
+                        }
                     }
                     else
                     {
@@ -63,7 +86,7 @@ namespace NewWorldMinimap.TestBench
                 }
 
                 Console.WriteLine();
-                Console.WriteLine($"Correct: {group.Value.Count - failures} / {group.Value.Count}");
+                Console.WriteLine($"Correct: {group.Value.Count - failures} / {group.Value.Count} | False hits: {falseHits}");
                 Console.WriteLine();
             }
 
@@ -76,7 +99,7 @@ namespace NewWorldMinimap.TestBench
                 Console.WriteLine("No runs were executed. Check your configuration.");
             }
 
-            Console.WriteLine($"Correct: {totalSuccess}/{totalRuns} ({((float)totalSuccess / totalRuns * 100).ToString("0.00", CultureInfo.InvariantCulture)}%)");
+            Console.WriteLine($"Correct: {totalSuccess}/{totalRuns} ({((float)totalSuccess / totalRuns * 100).ToString("0.00", CultureInfo.InvariantCulture)}%) | False hits: {totalFalseHits}");
             Console.WriteLine($"Average success time: {((float)totalTimeSuccess / totalRuns).ToString("0.00", CultureInfo.InvariantCulture)}ms");
             Console.WriteLine($"Average failure time: {((float)totalTimeFail / totalRuns).ToString("0.00", CultureInfo.InvariantCulture)}ms");
         }
@@ -105,13 +128,14 @@ namespace NewWorldMinimap.TestBench
             Vector2 expected = ToVector(txtContent);
 
             using Image<Rgba32> img = Image.Load<Rgba32>(fileName);
-
+            var imageFeeder = new ImageFeeder(img);
+            var pd = new ImageTesseractPositionDetector(imageFeeder);
             Stopwatch sw = Stopwatch.StartNew();
-            pd.TryGetPosition(img, out Vector2 found, false, out Image<Rgba32> debugImage);
+            var r = pd.GetPosition();
             pd.ResetCounter();
             sw.Stop();
 
-            return new Result(cat, name, found, expected, (ulong)sw.ElapsedMilliseconds);
+            return new Result(cat, name, r.Position, expected, (ulong)sw.ElapsedMilliseconds, r.Successful);
         }
 
         private static Vector2 ToVector(string coords)
@@ -128,11 +152,12 @@ namespace NewWorldMinimap.TestBench
     /// <summary>
     /// Used for passing around results of the test benchmark.
     /// </summary>
-    public record Result(string Category, string Name, Vector2 Found, Vector2 Expected, ulong Time)
+    public record Result(string Category, string Name, Vector2 Found, Vector2 Expected, ulong Time, bool SuccessfulRead)
     {
         /// <summary>
         /// Gets a value indicating whether the result was correct.
         /// </summary>
         public bool Success => Found == Expected;
+        public bool FalseSuccess => !Success && SuccessfulRead;
     }
 }

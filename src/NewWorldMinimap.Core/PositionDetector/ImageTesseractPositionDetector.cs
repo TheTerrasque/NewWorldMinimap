@@ -8,13 +8,13 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using TesserNet;
 
-namespace NewWorldMinimap.Core
+namespace NewWorldMinimap.Core.PositionDetector
 {
     /// <summary>
     /// Provides logic for performing OCR to find the position of the player.
     /// </summary>
     /// <seealso cref="IDisposable" />
-    public class PositionDetector : IDisposable
+    public class ImageTesseractPositionDetector : IDisposable, IPositionDetector
     {
         private const int XOffset = 277;
         private const int YOffset = 18;
@@ -37,48 +37,46 @@ namespace NewWorldMinimap.Core
         private float lastY;
         private int counter = int.MaxValue;
 
+        public bool DebugEnabled { get; private set; }
+        private IImageSource ImageSource { get;  set; }
+
+        public ImageTesseractPositionDetector(IImageSource imageSource, bool debugEnabled = false)
+        {
+            DebugEnabled = debugEnabled;
+            ImageSource = imageSource;
+        }
+
         /// <summary>
-        /// Finalizes an instance of the <see cref="PositionDetector"/> class.
+        /// Finalizes an instance of the <see cref="ImageTesseractPositionDetector"/> class.
         /// </summary>
-        ~PositionDetector()
+        ~ImageTesseractPositionDetector()
             => Dispose(false);
 
         /// <summary>
-        /// Tries to get the position from the provided image.
+        /// Tries to get the position from the image provider.
         /// </summary>
         /// <param name="bmp">The image.</param>
         /// <param name="position">The position.</param>
         /// <param name="debugEnabled">Determines whether or not the debug functionality is enabled.</param>
         /// <param name="debugImage">The resulting debug image.</param>
         /// <returns>The found position.</returns>
-        public bool TryGetPosition(Image<Rgba32> bmp, out Vector2 position, bool debugEnabled, out Image<Rgba32> debugImage)
+        public PositionResult GetPosition()
         {
-            if (bmp is null)
-            {
-                throw new ArgumentNullException(nameof(bmp));
-            }
+            var result = new PositionResult();
+            var bmp = ImageSource.GetImage();
 
             bmp.Mutate(x => x
                 .Crop(new Rectangle(bmp.Width - XOffset, YOffset, TextWidth, TextHeight))
                 .Resize(TextWidth * 4, TextHeight * 4)
                 .ColorFilter(textColor)
             );
-            debugImage = debugEnabled ? bmp.Clone() : null;
-            //bmp.Mutate(x => x
-            //    .HistogramEqualization()
-            //    
-            //    .WhiteFilter(0.9f)
-            //    .Dilate(2)
-            //    .Pad(TextWidth * 8, TextHeight * 16, Color.White)
-            //    );
 
-            if (TryGetPositionInternal(bmp, out position))
+            if (TryGetPositionInternal(bmp, out Vector2 position))
             {
-                return true;
+                result.Successful = true;
+                result.Position = position;
             }
-
-            position = default;
-            return false;
+            return result;
         }
 
         /// <summary>
@@ -121,7 +119,7 @@ namespace NewWorldMinimap.Core
             string text = tesseract.Read(bmp).Trim();
             Console.WriteLine();
             Console.WriteLine("Read: " + text);
-            if (text.Trim().StartsWith("["))
+            if (text.StartsWith("["))
             {
                 text = Regex.Replace(text, @"[^0-9]+", " ");
                 text = Regex.Replace(text, @"\s+", " ").Trim();

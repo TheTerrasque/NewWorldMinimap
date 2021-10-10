@@ -12,6 +12,7 @@ using NewWorldMinimap.Caches;
 using NewWorldMinimap.Core;
 using NewWorldMinimap.Core.Util;
 using NewWorldMinimap.Util;
+using NonInvasiveKeyboardHookLibrary;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -35,7 +36,7 @@ namespace NewWorldMinimap
         private readonly List<MenuItem> screenItems = new List<MenuItem>();
         private readonly List<MenuItem> refreshDelayItems = new List<MenuItem>();
         private readonly MenuItem debugButton;
-
+        private readonly KeyboardHookManager keyboardHookManager = new KeyboardHookManager();
         private int currentScreen;
         private int refreshDelay;
         private bool debugEnabled;
@@ -85,6 +86,13 @@ namespace NewWorldMinimap
             this.FormClosed += OnClose;
             this.Icon = LoadIcon();
             BuildMenu();
+
+            keyboardHookManager.Start();
+            keyboardHookManager.RegisterHotkey(0x60, () =>
+            {
+                Debug.WriteLine("NumPad0 detected");
+                SaveScreenshot();
+            });
         }
 
         private void BuildMenu()

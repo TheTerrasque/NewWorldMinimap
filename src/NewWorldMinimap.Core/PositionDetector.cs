@@ -16,7 +16,7 @@ namespace NewWorldMinimap.Core
     /// <seealso cref="IDisposable" />
     public class PositionDetector : IDisposable
     {
-        private const int XOffset = 257;
+        private const int XOffset = 277;
         private const int YOffset = 18;
         private const int TextWidth = XOffset;
         private const int TextHeight = YOffset;
@@ -121,7 +121,7 @@ namespace NewWorldMinimap.Core
             string text = tesseract.Read(bmp).Trim();
             Console.WriteLine();
             Console.WriteLine("Read: " + text);
-            if (true)
+            if (text.Trim().StartsWith("["))
             {
                 text = Regex.Replace(text, @"[^0-9]+", " ");
                 text = Regex.Replace(text, @"\s+", " ").Trim();

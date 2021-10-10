@@ -14,7 +14,7 @@ namespace NewWorldMinimap.Core.PositionDetector
     /// Provides logic for performing OCR to find the position of the player.
     /// </summary>
     /// <seealso cref="IDisposable" />
-    public class ImageTesseractPositionDetector : IDisposable, IPositionDetector
+    public class ImageTesseractCFPositionDetector : IDisposable, IPositionDetector
     {
         private const int XOffset = 277;
         private const int YOffset = 18;
@@ -40,16 +40,16 @@ namespace NewWorldMinimap.Core.PositionDetector
         public bool DebugEnabled { get; private set; }
         private IImageSource ImageSource { get;  set; }
 
-        public ImageTesseractPositionDetector(IImageSource imageSource, bool debugEnabled = false)
+        public ImageTesseractCFPositionDetector(IImageSource imageSource, bool debugEnabled = false)
         {
             DebugEnabled = debugEnabled;
             ImageSource = imageSource;
         }
 
         /// <summary>
-        /// Finalizes an instance of the <see cref="ImageTesseractPositionDetector"/> class.
+        /// Finalizes an instance of the <see cref="ImageTesseractCFPositionDetector"/> class.
         /// </summary>
-        ~ImageTesseractPositionDetector()
+        ~ImageTesseractCFPositionDetector()
             => Dispose(false);
 
         /// <summary>

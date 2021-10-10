@@ -129,7 +129,7 @@ namespace NewWorldMinimap.TestBench
 
             using Image<Rgba32> img = Image.Load<Rgba32>(fileName);
             var imageFeeder = new ImageFeeder(img);
-            var pd = new ImageTesseractPositionDetector(imageFeeder);
+            var pd = new ImageTesseractOriginalPositionDetector(imageFeeder);
             Stopwatch sw = Stopwatch.StartNew();
             var r = pd.GetPosition();
             pd.ResetCounter();

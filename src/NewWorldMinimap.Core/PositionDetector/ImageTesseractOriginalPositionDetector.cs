@@ -86,6 +86,19 @@ namespace NewWorldMinimap.Core.PositionDetector
             return false;
         }
 
+        public PositionResult GetPosition()
+        {
+            var img = source.GetImage();
+            var result = TryGetPosition(img, out Vector2 position, DebugEnabled, out Image<Rgba32> debugImage);
+
+            return new PositionResult
+            {
+                DebugImage = debugImage,
+                Position = position,
+                Successful = result,
+            };
+        }
+
         /// <summary>
         /// Resets the counter.
         /// </summary>
@@ -174,17 +187,6 @@ namespace NewWorldMinimap.Core.PositionDetector
             return false;
         }
 
-        public PositionResult GetPosition()
-        {
-            var img = source.GetImage();
-            var result = TryGetPosition(img, out Vector2 position, DebugEnabled, out Image<Rgba32> debugImage);
-            
-            return new PositionResult
-            {
-                DebugImage = debugImage,
-                Position = position,
-                Successful = result,
-            };
-        }
+
     }
 }

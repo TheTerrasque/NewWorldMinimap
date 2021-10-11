@@ -119,7 +119,7 @@ namespace NewWorldMinimap.Core.PositionDetector
             string text = tesseract.Read(bmp).Trim();
             Console.WriteLine();
             Console.WriteLine("Read: " + text);
-            if (text.StartsWith("["))
+            if (true)
             {
                 text = Regex.Replace(text, @"[^0-9]+", " ");
                 text = Regex.Replace(text, @"\s+", " ").Trim();
@@ -129,34 +129,6 @@ namespace NewWorldMinimap.Core.PositionDetector
                 {
                     float x = float.Parse(m.Groups[1].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
                     float y = float.Parse(m.Groups[2].Value.Replace(' ', '.'), CultureInfo.InvariantCulture);
-
-                    x %= 100000;
-
-                    while (x > 14260)
-                    {
-                        x -= 10000;
-                    }
-
-                    y %= 10000;
-
-                    if (counter >= MaxCounter)
-                    {
-                        counter = 0;
-                    }
-                    else
-                    {
-                        if (Math.Abs(lastX - x) > 20 && counter < MaxCounter)
-                        {
-                            x = lastX;
-                            counter++;
-                        }
-
-                        if (Math.Abs(lastY - y) > 20 && counter < MaxCounter)
-                        {
-                            y = lastY;
-                            counter++;
-                        }
-                    }
 
                     if (x >= 4468 && x <= 14260 && y >= 84 && y <= 9999)
                     {

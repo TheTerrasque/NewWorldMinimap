@@ -1,5 +1,5 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using Serilog;
+using System;
 using System.Windows.Forms;
 
 namespace NewWorldMinimap
@@ -12,20 +12,22 @@ namespace NewWorldMinimap
         /// <summary>
         /// Defines the entry point of the application.
         /// </summary>
+        /// <param name="args">The arguments.</param>
         [STAThread]
-        public static void Main()
+        public static void Main(string[] args)
         {
-            NativeMethods.SetProcessDPIAware();
+            SetProcessDPIAware();
+            using var log = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+            Log.Logger = log;
+
             Application.EnableVisualStyles();
             using Form map = new MapForm();
             Application.Run(map);
         }
 
-        private static class NativeMethods
-        {
-            [DllImport("user32")]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            public static extern bool SetProcessDPIAware();
-        }
+        [System.Runtime.InteropServices.DllImport("user32")]
+        private static extern bool SetProcessDPIAware();
     }
 }

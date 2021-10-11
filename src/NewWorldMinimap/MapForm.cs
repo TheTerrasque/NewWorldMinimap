@@ -14,6 +14,7 @@ using NewWorldMinimap.Core.PositionProvider;
 using NewWorldMinimap.Core.Util;
 using NewWorldMinimap.Util;
 using NonInvasiveKeyboardHookLibrary;
+using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -220,22 +221,14 @@ namespace NewWorldMinimap
             {
                 sw.Restart();
 
-                if (_positionProvider.GetPosition(out Vector2 pos))
+                if (_positionProvider.TryGetPosition(out Vector2 pos))
                 {
-                    Vector2 posDifference = pos - lastPos;
-
-                    if (posDifference != Vector2.Zero)
-                    {
-                        rotationAngle = Math.Atan2(posDifference.X, posDifference.Y);
-                    }
-
-                    Redraw(pos, rotationAngle);
-
+                    Redraw(pos, _positionProvider.ActorAngle);
                     lastPos = pos;
                 }
                 else
                 {
-                    Console.WriteLine($"{i}: Failure");
+                    Log.Debug("Read Failure");
                 }
 
                 if (_positionProvider.DebugImage != null)

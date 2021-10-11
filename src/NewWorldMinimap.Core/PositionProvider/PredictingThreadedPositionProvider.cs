@@ -13,14 +13,18 @@ namespace NewWorldMinimap.Core.PositionProvider
         public PredictingThreadedPositionProvider(IPositionDetector positionDetector, int refreshMS = 600)
         {
             PositionDetector = positionDetector;
-            scannerThread = new Thread(UpdateLoop);
+            scannerThread = new Thread(ThreadUpdateLoop);
             scannerThread.Start();
             RefreshMS = refreshMS;
+            FailRefreshMS = 100;
         }
 
         private TimeSpan StaleTime = TimeSpan.FromSeconds(2);
-        public IPositionDetector PositionDetector { get; }
+        public IPositionDetector PositionDetector { get; private set; }
         public int RefreshMS { get; private set; }
+
+        private int FailRefreshMS;
+
         public DateTime LastRead { get; private set; }
         public Image<Rgba32> DebugImage { get; private set; }
         public bool LastReadStatus { get; private set; }
@@ -29,32 +33,61 @@ namespace NewWorldMinimap.Core.PositionProvider
         private Vector2 deltaPerMs;
         private PositionResult posData;
 
-        public void UpdateLoop()
+        private bool StaleData => (DateTime.Now - LastRead) > StaleTime;
+
+        public double ActorAngle { get; private set; }
+
+        public bool UpdatePosition()
+        {
+            var myPosData = PositionDetector.GetPosition();
+            if (myPosData.Successful)
+            {
+                if (posData != null && posData.Successful)
+                {
+                    var delta = myPosData.Position - posData.Position;
+                    if (delta != Vector2.Zero)
+                    {
+                        ActorAngle = Math.Atan2(delta.X, delta.Y);
+                    }
+
+                    var deltaTime = (float)(DateTime.Now - LastRead).TotalMilliseconds;
+                    if (!StaleData)
+                    {
+                        if (delta.Length() > 15)
+                        {
+                            Serilog.Log.Information(
+                                "Too much distance from {OldPos} and {NewPos}: {DistanceLength} - skipping",
+                                posData.Position, myPosData.Position, delta.Length());
+                            return false;
+                        }
+                    }
+                    deltaPerMs = delta / new Vector2(deltaTime, deltaTime);
+                }
+                posData = myPosData;
+                LastRead = DateTime.Now;
+            }
+            DebugImage = myPosData.DebugImage;
+            return myPosData.Successful;
+        }
+
+        public void ThreadUpdateLoop()
         {
             var sw = new Stopwatch();
             while (true)
             {
+                var refreshMS = RefreshMS;
                 sw.Restart();
-                var myPosData = PositionDetector.GetPosition();
-                if (myPosData.Successful) {
-                    if (posData != null && posData.Successful)
-                    {
-                        var delta = myPosData.Position - posData.Position;
-                        var deltaTime = (float)(DateTime.Now - LastRead).TotalMilliseconds;
-                        deltaPerMs = delta / new Vector2(deltaTime, deltaTime);
-                    }
-                    posData = myPosData;
-                    LastRead = DateTime.Now;
+                if (!UpdatePosition())
+                {
+                    refreshMS = FailRefreshMS;
                 }
-                DebugImage = myPosData.DebugImage;
-                LastReadStatus = myPosData.Successful;
                 sw.Stop();
 
                 long elapsed = sw.ElapsedMilliseconds;
 
-                if (elapsed < RefreshMS)
+                if (elapsed < refreshMS)
                 {
-                    Thread.Sleep(RefreshMS - (int)elapsed);
+                    Thread.Sleep(refreshMS - (int)elapsed);
                 }
             }
         }
@@ -65,7 +98,7 @@ namespace NewWorldMinimap.Core.PositionProvider
             return posData.Position + (deltaPerMs * new Vector2(diff, diff));
         }
 
-        public bool GetPosition(out Vector2 position)
+        public bool TryGetPosition(out Vector2 position)
         {
 
             if (posData == null)
@@ -74,7 +107,12 @@ namespace NewWorldMinimap.Core.PositionProvider
                 return false;
             }
             position = PredictPosition();
-            return DateTime.Now - LastRead < StaleTime;
+            return !StaleData;
+        }
+
+        public void SetPositionDetector(IPositionDetector detector)
+        {
+            PositionDetector = detector;
         }
     }
 }

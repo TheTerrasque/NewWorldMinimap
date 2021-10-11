@@ -78,7 +78,7 @@ namespace NewWorldMinimap
             var screenRect = ScreenGrabber.GetScreenRect(screen);
             var imageSource = new Screenshotter(screenRect);
             var positionDetector = new ImageTesseractCFPositionDetector(imageSource);
-            _positionProvider = new SimpleThreadedPositionProvider(positionDetector);
+            _positionProvider = new PredictingThreadedPositionProvider(positionDetector);
         }
 
         private void InitializeComponent()

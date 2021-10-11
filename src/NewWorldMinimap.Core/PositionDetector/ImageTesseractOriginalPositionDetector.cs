@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using NewWorldMinimap.Core.Util;
+using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -22,6 +23,12 @@ namespace NewWorldMinimap.Core.PositionDetector
         private const int TextHeight = 18;
         private const int MaxCounter = 5;
 
+        private bool disposedValue;
+        private float lastX;
+        private float lastY;
+        private int counter = int.MaxValue;
+        private IImageSource source;
+
         private static readonly Regex PosRegex = new Regex(@"(\d+ \d+) (\d+ \d+)", RegexOptions.Compiled);
 
         private readonly ITesseract tesseract = new TesseractPool(new TesseractOptions
@@ -35,13 +42,8 @@ namespace NewWorldMinimap.Core.PositionDetector
         {
             this.source = source;
             DebugEnabled = debug;
+            Log.Information("Original Position Detector created with debug {DebugState}", debug);
         }
-
-        private bool disposedValue;
-        private float lastX;
-        private float lastY;
-        private int counter = int.MaxValue;
-        private IImageSource source;
 
         public bool DebugEnabled { get; }
 

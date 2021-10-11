@@ -15,27 +15,31 @@ namespace NewWorldMinimap.Core.PositionProvider
             PositionDetector = positionDetector;
             scannerThread = new Thread(ThreadUpdateLoop);
             scannerThread.Start();
-            RefreshMS = refreshMS;
-            FailRefreshMS = 100;
+            this.refreshMS = refreshMS;
+            failRefreshMS = 100;
         }
 
-        private TimeSpan StaleTime = TimeSpan.FromSeconds(2);
-        public IPositionDetector PositionDetector { get; private set; }
-        public int RefreshMS { get; private set; }
-
-        private int FailRefreshMS;
-
         public DateTime LastRead { get; private set; }
+
         public Image<Rgba32> DebugImage { get; private set; }
+
         public bool LastReadStatus { get; private set; }
 
+        public double ActorAngle { get; private set; }
+
+        public IPositionDetector PositionDetector { get; private set; }
+
+        public int refreshMS { get; private set; }
+
+        private int failRefreshMS;
+        private TimeSpan staleTime = TimeSpan.FromSeconds(2);
         private Thread scannerThread;
         private Vector2 deltaPerMs;
         private PositionResult posData;
 
-        private bool StaleData => (DateTime.Now - LastRead) > StaleTime;
+        private bool StaleData => (DateTime.Now - LastRead) > staleTime;
 
-        public double ActorAngle { get; private set; }
+
 
         public bool UpdatePosition()
         {
@@ -61,11 +65,14 @@ namespace NewWorldMinimap.Core.PositionProvider
                             return false;
                         }
                     }
+
                     deltaPerMs = delta / new Vector2(deltaTime, deltaTime);
                 }
+
                 posData = myPosData;
                 LastRead = DateTime.Now;
             }
+
             DebugImage = myPosData.DebugImage;
             return myPosData.Successful;
         }
@@ -75,12 +82,13 @@ namespace NewWorldMinimap.Core.PositionProvider
             var sw = new Stopwatch();
             while (true)
             {
-                var refreshMS = RefreshMS;
+                var refreshMS = this.refreshMS;
                 sw.Restart();
                 if (!UpdatePosition())
                 {
-                    refreshMS = FailRefreshMS;
+                    refreshMS = failRefreshMS;
                 }
+
                 sw.Stop();
 
                 long elapsed = sw.ElapsedMilliseconds;
@@ -106,6 +114,7 @@ namespace NewWorldMinimap.Core.PositionProvider
                 position = default;
                 return false;
             }
+
             position = PredictPosition();
             return !StaleData;
         }

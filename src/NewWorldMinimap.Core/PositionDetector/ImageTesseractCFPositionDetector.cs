@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using NewWorldMinimap.Core.Util;
+using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -44,6 +45,7 @@ namespace NewWorldMinimap.Core.PositionDetector
         {
             DebugEnabled = debugEnabled;
             ImageSource = imageSource;
+            Log.Information("ColorFilter Position Detector created with debug {DebugState}", debugEnabled);
         }
 
         /// <summary>
@@ -70,12 +72,14 @@ namespace NewWorldMinimap.Core.PositionDetector
                 .Resize(TextWidth * 4, TextHeight * 4)
                 .ColorFilter(textColor)
             );
+            result.DebugImage = DebugEnabled ? bmp.Clone() : null!;
 
             if (TryGetPositionInternal(bmp, out Vector2 position))
             {
                 result.Successful = true;
                 result.Position = position;
             }
+
             return result;
         }
 
@@ -139,6 +143,7 @@ namespace NewWorldMinimap.Core.PositionDetector
                     }
                 }
             }
+
             return false;
         }
     }

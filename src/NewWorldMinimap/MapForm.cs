@@ -101,7 +101,7 @@ namespace NewWorldMinimap
             keyboardHookManager.RegisterHotkey(0x60, () =>
             {
                 Console.WriteLine("NumPad0 detected");
-                SaveScreenshot();
+                //SaveScreenshot();
             });
         }
 
@@ -117,10 +117,9 @@ namespace NewWorldMinimap
                 screenItems.Add(item);
             }
 
-            CreateRefreshMenuItem(0);
-            CreateRefreshMenuItem(200);
-            CreateRefreshMenuItem(350);
-            CreateRefreshMenuItem(1000);
+            CreateRefreshMenuItem(30);
+            CreateRefreshMenuItem(60);
+            CreateRefreshMenuItem(90);
 
             menu.MenuItems.Add(alwaysOnTopButton);
             menu.MenuItems.Add("-");
@@ -131,7 +130,7 @@ namespace NewWorldMinimap
             menu.MenuItems.Add(debugButton);
 
             SelectScreen(ScreenGrabber.GetPrimaryScreenIndex());
-            SelectRefreshDelay(2, 350);
+            SelectRefreshDelay(1, 60);
         }
 
         private void CreateRefreshMenuItem(int delay)
@@ -239,9 +238,9 @@ namespace NewWorldMinimap
                     Console.WriteLine($"{i}: Failure");
                 }
 
-                if (debugImage != null)
+                if (_positionProvider.DebugImage != null)
                 {
-                    DrawDebugImage(debugImage);
+                    DrawDebugImage(_positionProvider.DebugImage);
                 }
 
                 i++;

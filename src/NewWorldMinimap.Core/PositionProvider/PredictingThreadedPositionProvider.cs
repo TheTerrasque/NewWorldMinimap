@@ -1,4 +1,6 @@
 ﻿using NewWorldMinimap.Core.PositionDetector;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Diagnostics;
 using System.Numerics;
@@ -16,10 +18,11 @@ namespace NewWorldMinimap.Core.PositionProvider
             RefreshMS = refreshMS;
         }
 
-        private TimeSpan StaleTime = TimeSpan.FromSeconds(3);
+        private TimeSpan StaleTime = TimeSpan.FromSeconds(2);
         public IPositionDetector PositionDetector { get; }
         public int RefreshMS { get; private set; }
         public DateTime LastRead { get; private set; }
+        public Image<Rgba32> DebugImage { get; private set; }
         public bool LastReadStatus { get; private set; }
 
         private Thread scannerThread;
@@ -43,6 +46,7 @@ namespace NewWorldMinimap.Core.PositionProvider
                     posData = myPosData;
                     LastRead = DateTime.Now;
                 }
+                DebugImage = myPosData.DebugImage;
                 LastReadStatus = myPosData.Successful;
                 sw.Stop();
 

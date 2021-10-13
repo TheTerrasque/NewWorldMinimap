@@ -6,8 +6,8 @@ namespace NewWorldMinimap.Core.PositionDetector
 {
     public class PositionResult
     {
-        public bool Successful { get; set; } = false;
-        public Vector2 Position { get; set; } = default;
+        public bool Successful { get; set; }
+        public Vector2 Position { get; set; }
         public Image<Rgba32> DebugImage { get; set; }
     }
 

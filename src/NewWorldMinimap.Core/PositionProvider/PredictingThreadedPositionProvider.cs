@@ -10,13 +10,13 @@ namespace NewWorldMinimap.Core.PositionProvider
 {
     public class PredictingThreadedPositionProvider : IPositionProvider
     {
-        public PredictingThreadedPositionProvider(IPositionDetector positionDetector, int refreshMS = 600)
+        public PredictingThreadedPositionProvider(IPositionDetector positionDetector, int refreshMS = 600, int failRefreshMS = 200)
         {
             PositionDetector = positionDetector;
             scannerThread = new Thread(ThreadUpdateLoop);
             scannerThread.Start();
             this.refreshMS = refreshMS;
-            failRefreshMS = 100;
+            this.failRefreshMS = failRefreshMS;
         }
 
         public DateTime LastRead { get; private set; }
@@ -31,15 +31,24 @@ namespace NewWorldMinimap.Core.PositionProvider
 
         public int refreshMS { get; private set; }
 
-        private int failRefreshMS;
-        private TimeSpan staleTime = TimeSpan.FromSeconds(2);
+        public int failRefreshMS { get; private set; }
+
+        private TimeSpan staleTime = TimeSpan.FromSeconds(5);
         private Thread scannerThread;
         private Vector2 deltaPerMs;
         private PositionResult posData;
 
+        public void SetRefreshMS(int milliseconds)
+        {
+            refreshMS = milliseconds;
+        }
+
+        public void SetFailRefreshMS(int milliseconds)
+        {
+            failRefreshMS = milliseconds;
+        }
+
         private bool StaleData => (DateTime.Now - LastRead) > staleTime;
-
-
 
         public bool UpdatePosition()
         {
@@ -48,7 +57,12 @@ namespace NewWorldMinimap.Core.PositionProvider
             {
                 if (posData != null && posData.Successful)
                 {
-                    var delta = myPosData.Position - posData.Position;
+                    Vector2 delta;
+                    if (StaleData) {
+                        delta = Vector2.Zero;
+                    } else {
+                        delta = myPosData.Position - posData.Position;
+                    }
                     if (delta != Vector2.Zero)
                     {
                         ActorAngle = Math.Atan2(delta.X, delta.Y);
@@ -57,7 +71,8 @@ namespace NewWorldMinimap.Core.PositionProvider
                     var deltaTime = (float)(DateTime.Now - LastRead).TotalMilliseconds;
                     if (!StaleData)
                     {
-                        if (delta.Length() > 15)
+
+                        if (delta.Length() > (0.0075 * deltaTime))
                         {
                             Serilog.Log.Information(
                                 "Too much distance from {OldPos} and {NewPos}: {DistanceLength} - skipping",

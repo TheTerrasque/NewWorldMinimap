@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading;
@@ -43,12 +44,13 @@ namespace NewWorldMinimap
         private readonly ContextMenu menu = new ContextMenu();
         private readonly MenuItem alwaysOnTopButton;
         private readonly List<MenuItem> screenItems = new List<MenuItem>();
-        private readonly List<MenuItem> refreshDelayItems = new List<MenuItem>();
-        private readonly List<MenuItem> _menuPositionSource = new List<MenuItem>();
+        private readonly MenuGroupHandler _menuRefreshDelay = new MenuGroupHandler();
+        private readonly MenuGroupHandler _menuPositionSource = new MenuGroupHandler();
+
         private readonly MenuItem debugButton;
         private readonly KeyboardHookManager keyboardHookManager = new KeyboardHookManager();
         private int currentScreen;
-        private int refreshDelay;
+        private int refreshDelay = 60;
         private bool debugEnabled;
 
         private Thread? scannerThread;
@@ -84,6 +86,7 @@ namespace NewWorldMinimap
         {
             var screenRect = ScreenGrabber.GetScreenRect(currentScreen);
             var imageSource = new Screenshotter(screenRect);
+
             if (ActivePositionDetector == PositionDetectors.ColorFilter)
             {
                 return new ImageTesseractCFPositionDetector(imageSource, debugEnabled);
@@ -139,15 +142,9 @@ namespace NewWorldMinimap
             });
         }
 
-        private void SetDetectorSource(int index, PositionDetectors detector)
+        private void SetDetectorSource(PositionDetectors detector)
         {
             ActivePositionDetector = detector;
-            foreach (MenuItem mi in _menuPositionSource)
-            {
-                mi.Checked = false;
-            }
-
-            _menuPositionSource[index].Checked = true;
             UpdatePositionProvider();
         }
 
@@ -163,43 +160,31 @@ namespace NewWorldMinimap
                 screenItems.Add(item);
             }
 
-            var detectors = (PositionDetectors[])Enum.GetValues(typeof(PositionDetectors));
-            for (int i = 0;  i < detectors.Length; i++)
+            ((PositionDetectors[])Enum.GetValues(typeof(PositionDetectors))).ToList().ForEach(x => {
+                _menuPositionSource.AddItem(
+                    $"Position Source: {x}",
+                    (s, e) => SetDetectorSource(x),
+                    selected: x == ActivePositionDetector
+                );
+            });
+
+            foreach (var delay in new[] {30, 60, 90, 160})
             {
-                var detector = detectors[i];
-                var localI = i;
-                MenuItem item = new MenuItem($"Position Source: {detector}", (s, e) => SetDetectorSource(localI, detector), Shortcut.None);
-                if (detector == ActivePositionDetector)
-                {
-                    item.Checked = true;
-                }
-
-                _menuPositionSource.Add(item);
+                _menuRefreshDelay.AddItem($"Refresh delay: {delay}ms.", (s, e) => { refreshDelay = delay; }, selected: delay == refreshDelay);
             }
-
-            CreateRefreshMenuItem(30);
-            CreateRefreshMenuItem(60);
-            CreateRefreshMenuItem(90);
 
             menu.MenuItems.Add(alwaysOnTopButton);
             menu.MenuItems.Add("-");
             menu.MenuItems.AddRange(screenItems.ToArray());
-            menu.MenuItems.Add("-");
-            menu.MenuItems.AddRange(refreshDelayItems.ToArray());
-            menu.MenuItems.Add("-");
-            menu.MenuItems.AddRange(_menuPositionSource.ToArray());
+            _menuRefreshDelay.CreateMenu(menu.MenuItems);
+            _menuPositionSource.CreateMenu(menu.MenuItems);
             //menu.MenuItems.Add("-");
             //menu.MenuItems.Add(debugButton);
 
             SelectScreen(ScreenGrabber.GetPrimaryScreenIndex());
-            SelectRefreshDelay(1, 60);
         }
 
-        private void CreateRefreshMenuItem(int delay)
-        {
-            int index = refreshDelayItems.Count;
-            refreshDelayItems.Add(new MenuItem($"Refresh delay: {delay}ms.", (s, e) => SelectRefreshDelay(index, delay), Shortcut.None));
-        }
+
 
         private void SelectScreen(int index)
         {
@@ -207,18 +192,6 @@ namespace NewWorldMinimap
             currentScreen = index;
             screenItems[index].Checked = true;
             UpdatePositionProvider();
-        }
-
-        private void SelectRefreshDelay(int index, int delay)
-        {
-            refreshDelay = delay;
-
-            foreach (MenuItem mi in refreshDelayItems)
-            {
-                mi.Checked = false;
-            }
-
-            refreshDelayItems[index].Checked = true;
         }
 
         private void ToggleAlwaysOnTop(object sender, EventArgs e)

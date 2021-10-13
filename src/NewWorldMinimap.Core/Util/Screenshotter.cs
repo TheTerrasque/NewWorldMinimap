@@ -13,7 +13,7 @@ namespace NewWorldMinimap.Core.Util
     /// </summary>
     public class Screenshotter: IImageSource
     {
-       public Screenshotter(System.Drawing.Rectangle rectangle)
+        public Screenshotter(System.Drawing.Rectangle rectangle)
         {
             ScreenRectangle = rectangle;
         }

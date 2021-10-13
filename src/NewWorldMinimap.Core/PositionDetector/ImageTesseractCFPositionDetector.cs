@@ -21,7 +21,6 @@ namespace NewWorldMinimap.Core.PositionDetector
         private const int YOffset = 18;
         private const int TextWidth = XOffset;
         private const int TextHeight = YOffset;
-        private const int MaxCounter = 5;
         private static Vector4 textColor = (Vector4)Color.FromRgb(220, 220, 160);
 
         private static readonly Regex PosRegex = new Regex(@"(\d+ \d+) (\d+ \d+)", RegexOptions.Compiled);
@@ -34,9 +33,6 @@ namespace NewWorldMinimap.Core.PositionDetector
         });
 
         private bool disposedValue;
-        private float lastX;
-        private float lastY;
-        private int counter = int.MaxValue;
 
         public bool DebugEnabled { get; private set; }
         private IImageSource ImageSource { get;  set; }
@@ -82,12 +78,6 @@ namespace NewWorldMinimap.Core.PositionDetector
 
             return result;
         }
-
-        /// <summary>
-        /// Resets the counter.
-        /// </summary>
-        public void ResetCounter()
-            => counter = int.MaxValue;
 
         /// <inheritdoc/>
         public void Dispose()
@@ -136,8 +126,6 @@ namespace NewWorldMinimap.Core.PositionDetector
 
                     if (x >= 4468 && x <= 14260 && y >= 84 && y <= 9999)
                     {
-                        lastX = x;
-                        lastY = y;
                         position = new Vector2(x, y);
                         return true;
                     }
